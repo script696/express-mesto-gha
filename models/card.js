@@ -20,7 +20,7 @@ const cardSchema = new mongoose.Schema({
     default: [],
   },
   createdAt : {
-    date : Date.now
+    type: String
   }
 });
 
