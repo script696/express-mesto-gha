@@ -1,9 +1,13 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const bodyParser = require('body-parser'); 
 
 const { PORT = 3000 } = process.env;
 
 const app = express(); 
+
+app.use(bodyParser.json()); 
+app.use(bodyParser.urlencoded({ extended: true })); 
 
 
 
@@ -12,20 +16,15 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
   
 });
 
-app.get('/', (req, res) => {
-  const {name, age} = req.query
-  console.log(req)
-  res.send(
-        `<html>
-        <body>
-        <h1>Privet Nikit1111a</h1>
-            <p>Ответ на сигнал из далёкого космоса</p>
-            <p>${name}</p>
-            <p>${age}</p>
-        </body>
-        </html>`
-    );
+app.use((req, res, next) => {
+  req.user = {
+    _id: '6320716ce027f9a2bf2a0309' // вставьте сюда _id созданного в предыдущем пункте пользователя
+  };
+
+  next();
 }); 
+
+app.use('/users', require('./routes/users'))
 
 
 app.listen(PORT, () => {
