@@ -13,8 +13,6 @@ module.exports.getUser = (req, res) => {
     .catch((err) => res.status(500).send({ message: "Произошла ошибка" }));
 };
 
-
-
 module.exports.createUser = (req, res) => {
   const { name, about, avatar } = req.body;
 
@@ -23,4 +21,30 @@ module.exports.createUser = (req, res) => {
       res.send({ data: user });
     })
     .catch((err) => res.status(500).send({ message: "Произошла ошибка" }));
+};
+
+module.exports.updateMe = (req, res) => {
+  const { name, about } = req.body;
+  User.findByIdAndUpdate(
+    req.params.cardId,
+    { name, about },
+    {
+      new: true,
+      runValidators: true,
+      upsert: false,
+    }
+  );
+};
+
+module.exports.updateAvatar = (req, res) => {
+  const { avatar } = req.body;
+  User.findByIdAndUpdate(
+    req.params.cardId,
+    { avatar },
+    {
+      new: true,
+      runValidators: true,
+      upsert: false,
+    }
+  );
 };
