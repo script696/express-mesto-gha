@@ -19,10 +19,13 @@ module.exports.getUser = async (req, res) => {
     );
     res.send(user);
   } catch (err) {
-    res.status(404).send(err.message);
+    if (err instanceof NotFoundError) {
+      res.status(404).send(err.message);
+      return;
+    }
+    res.status(500).send("Произошла ошибка");
   }
 };
-
 
 module.exports.createUser = async (req, res) => {
   const { name, about, avatar } = req.body;
@@ -30,37 +33,75 @@ module.exports.createUser = async (req, res) => {
     const user = await User.create({ name, about, avatar });
     res.send(user);
   } catch (err) {
-    res.status(500).send({ message: "Произошла ошибка" });
+    switch (err.name) {
+      case "ValidationError":
+        res.status(400).send({
+          message: "Переданы некорректные данные при создании пользователя.",
+        });
+        break;
+      default:
+        res.status(500).send("Произошла ошибка");
+    }
   }
 };
 
-
-
-
-
-
-module.exports.updateMe = (req, res) => {
+module.exports.updateMe = async (req, res) => {
   const { name, about } = req.body;
-  User.findByIdAndUpdate(
-    req.params.cardId,
-    { name, about },
-    {
-      new: true,
-      runValidators: true,
-      upsert: false,
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { name, about },
+      {
+        new: true,
+        runValidators: true,
+        upsert: false,
+      }
+    ).orFail(new NotFoundError(`Пользователь с указанным id не найден`));
+    res.send(user);
+  } catch (err) {
+    if (err instanceof NotFoundError) {
+      res.status(404).send(err.message);
+      return;
     }
-  );
+    switch (err.name) {
+      case "ValidationError":
+        res.status(400).send({
+          message: "Переданы некорректные данные при обновлении профиля.",
+        });
+        break;
+      default:
+        res.status(500).send("Произошла ошибка");
+    }
+  }
 };
 
-module.exports.updateAvatar = (req, res) => {
+module.exports.updateAvatar = async (req, res) => {
   const { avatar } = req.body;
-  User.findByIdAndUpdate(
-    req.params.cardId,
-    { avatar },
-    {
-      new: true,
-      runValidators: true,
-      upsert: false,
+
+  try {
+    const updatedAvatar = await User.findByIdAndUpdate(
+      req.user._id,
+      { avatar },
+      {
+        new: true,
+        runValidators: true,
+        upsert: false,
+      }
+    ).orFail(new NotFoundError(`Пользователь с указанным id не найден`));
+    res.send(updatedAvatar);
+  } catch (err) {
+    if (err instanceof NotFoundError) {
+      res.status(404).send(err.message);
+      return;
     }
-  );
+    switch (err.name) {
+      case "ValidationError":
+        res.status(400).send({
+          message: "Переданы некорректные данные при обновлении фватара.",
+        });
+        break;
+      default:
+        res.status(500).send("Произошла ошибка");
+    }
+  }
 };
