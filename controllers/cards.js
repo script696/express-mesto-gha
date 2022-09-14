@@ -1,10 +1,10 @@
-const { NotFoundError, ValidationError } = require("../errors/errors");
+const { NotFoundError } = require("../errors/errors");
 const Card = require("../models/card");
 
 module.exports.getCards = async (req, res) => {
   try {
     const cards = await Card.find({});
-    res.send(cards);
+    res.send({ data: cards });
   } catch (err) {
     res.status(500).send({ message: "Произошла ошибка" });
   }
@@ -15,7 +15,7 @@ module.exports.createCard = async (req, res) => {
   const owner = req.user._id;
   try {
     const card = await Card.create({ name, link, owner });
-    res.send(card);
+    res.send({ data: card });
   } catch (err) {
     switch (err.name) {
       case "ValidationError":
@@ -34,9 +34,9 @@ module.exports.deleteCard = async (req, res) => {
 
   try {
     const card = await Card.findByIdAndRemove(reqCard).orFail(
-      new NotFoundError(`карточка с указанным id не найдена`)
+      new NotFoundError("карточка с указанным id не найдена")
     );
-    res.send(card);
+    res.send({ data: card });
   } catch (err) {
     if (err instanceof NotFoundError) {
       res.status(404).send(err.message);
@@ -52,8 +52,8 @@ module.exports.likeCard = async (req, res) => {
       req.params.cardId,
       { $addToSet: { likes: req.user._id } },
       { new: true }
-    ).orFail(new NotFoundError(`карточка с указанным id не найдена`));
-    res.send(likes);
+    ).orFail(new NotFoundError("карточка с указанным id не найдена"));
+    res.send({ data: likes });
   } catch (err) {
     if (err instanceof NotFoundError) {
       res.status(404).send(err.message);
@@ -70,7 +70,6 @@ module.exports.likeCard = async (req, res) => {
     }
   }
 };
-
 
 module.exports.dislikeCard = async (req, res) => {
   try {
@@ -78,8 +77,8 @@ module.exports.dislikeCard = async (req, res) => {
       req.params.cardId,
       { $pull: { likes: req.user._id } },
       { new: true }
-    ).orFail(new NotFoundError(`карточка с указанным id не найдена`));
-    res.send(likes);
+    ).orFail(new NotFoundError("карточка с указанным id не найдена"));
+    res.send({ data: likes });
   } catch (err) {
     if (err instanceof NotFoundError) {
       res.status(404).send(err.message);
@@ -96,7 +95,3 @@ module.exports.dislikeCard = async (req, res) => {
     }
   }
 };
-
-
-
-
