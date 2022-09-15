@@ -14,16 +14,22 @@ module.exports.getUser = async (req, res) => {
   const reqUser = req.params.id;
 
   try {
-    const user = await User.findById(reqUser).orFail(
-      new NotFoundError(`Пользователь с id = ${reqUser} не найден`)
-    );
+    const user = await User.findById(reqUser).orFail(new NotFoundError());
     res.send({ data: user });
   } catch (err) {
-    if (err instanceof NotFoundError) {
-      res.status(404).send(err.message);
-      return;
+    let code = 500;
+    let msg = "Произошла ошибка";
+    switch (err.name) {
+      case "CastError":
+        code = 400;
+        msg = "Введены некорректные данные";
+        break;
+      case "NotFoundError":
+        code = 404;
+        msg = "Данные не найдены";
+        break;
     }
-    res.status(500).send("Произошла ошибка");
+    res.status(code).send(msg);
   }
 };
 
@@ -33,15 +39,15 @@ module.exports.createUser = async (req, res) => {
     const user = await User.create({ name, about, avatar });
     res.send({ data: user });
   } catch (err) {
+    let code = 500;
+    let msg = "Произошла ошибка";
     switch (err.name) {
       case "ValidationError":
-        res.status(400).send({
-          message: "Переданы некорректные данные при создании пользователя.",
-        });
+        code = 400;
+        msg = "Введены некорректные данные";
         break;
-      default:
-        res.status(500).send("Произошла ошибка");
     }
+    res.status(code).send(msg);
   }
 };
 
@@ -54,24 +60,23 @@ module.exports.updateMe = async (req, res) => {
       {
         new: true,
         runValidators: true,
-        upsert: false,
       }
-    ).orFail(new NotFoundError("Пользователь с указанным id не найден"));
+    ).orFail(new NotFoundError());
     res.send({ data: user });
   } catch (err) {
-    if (err instanceof NotFoundError) {
-      res.status(404).send(err.message);
-      return;
-    }
+    let code = 500;
+    let msg = "Произошла ошибка";
     switch (err.name) {
-      case "ValidationError":
-        res.status(400).send({
-          message: "Переданы некорректные данные при обновлении профиля.",
-        });
+      case "CastError":
+        code = 400;
+        msg = "Введены некорректные данные";
         break;
-      default:
-        res.status(500).send("Произошла ошибка");
+      case "NotFoundError":
+        code = 404;
+        msg = "Данные не найдены";
+        break;
     }
+    res.status(code).send(msg);
   }
 };
 
@@ -87,21 +92,22 @@ module.exports.updateAvatar = async (req, res) => {
         runValidators: true,
         upsert: false,
       }
-    ).orFail(new NotFoundError("Пользователь с указанным id не найден"));
+    ).orFail(new NotFoundError());
     res.send({ data: updatedAvatar });
   } catch (err) {
-    if (err instanceof NotFoundError) {
-      res.status(404).send(err.message);
-      return;
-    }
+    let code = 500;
+    let msg = "Произошла ошибка";
     switch (err.name) {
-      case "ValidationError":
-        res.status(400).send({
-          message: "Переданы некорректные данные при обновлении фватара.",
-        });
+      case "CastError":
+        code = 400;
+        msg = "Введены некорректные данные";
         break;
-      default:
-        res.status(500).send("Произошла ошибка");
+      case "NotFoundError":
+        code = 404;
+        msg = "Данные не найдены";
+        break;
     }
+    res.status(code).send(msg);
   }
 };
+

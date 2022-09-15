@@ -17,32 +17,39 @@ module.exports.createCard = async (req, res) => {
     const card = await Card.create({ name, link, owner });
     res.send({ data: card });
   } catch (err) {
+    let code = 500;
+    let msg = "Произошла ошибка";
     switch (err.name) {
       case "ValidationError":
-        res.status(400).send({
-          message: "Переданы некорректные данные при создании карточки.",
-        });
+        code = 400;
+        msg = "Введены некорректные данные";
         break;
-      default:
-        res.status(500).send("Произошла ошибка");
     }
+    res.status(code).send(msg);
   }
 };
 
 module.exports.deleteCard = async (req, res) => {
   const reqCard = req.params.cardId;
-
   try {
     const card = await Card.findByIdAndRemove(reqCard).orFail(
-      new NotFoundError("карточка с указанным id не найдена")
+      new NotFoundError()
     );
     res.send({ data: card });
   } catch (err) {
-    if (err instanceof NotFoundError) {
-      res.status(404).send(err.message);
-      return;
+    let code = 500;
+    let msg = "Произошла ошибка";
+    switch (err.name) {
+      case "CastError":
+        code = 400;
+        msg = "Введены некорректные данные";
+        break;
+      case "NotFoundError":
+        code = 404;
+        msg = "Данные не найдены";
+        break;
     }
-    res.status(500).send("Произошла ошибка");
+    res.status(code).send(msg);
   }
 };
 
@@ -52,22 +59,22 @@ module.exports.likeCard = async (req, res) => {
       req.params.cardId,
       { $addToSet: { likes: req.user._id } },
       { new: true }
-    ).orFail(new NotFoundError("карточка с указанным id не найдена"));
+    ).orFail(new NotFoundError());
     res.send({ data: likes });
   } catch (err) {
-    if (err instanceof NotFoundError) {
-      res.status(404).send(err.message);
-      return;
-    }
+    let code = 500;
+    let msg = "Произошла ошибка";
     switch (err.name) {
-      case "ValidationError":
-        res.status(400).send({
-          message: "Переданы некорректные данные для подстановки/снятия лайка.",
-        });
+      case "CastError":
+        code = 400;
+        msg = "Введены некорректные данные";
         break;
-      default:
-        res.status(500).send("Произошла ошибка");
+      case "NotFoundError":
+        code = 404;
+        msg = "Данные не найдены";
+        break;
     }
+    res.status(code).send(msg);
   }
 };
 
@@ -77,21 +84,22 @@ module.exports.dislikeCard = async (req, res) => {
       req.params.cardId,
       { $pull: { likes: req.user._id } },
       { new: true }
-    ).orFail(new NotFoundError("карточка с указанным id не найдена"));
+    ).orFail(new NotFoundError());
     res.send({ data: likes });
   } catch (err) {
-    if (err instanceof NotFoundError) {
-      res.status(404).send(err.message);
-      return;
-    }
+    let code = 500;
+    let msg = "Произошла ошибка";
     switch (err.name) {
-      case "ValidationError":
-        res.status(400).send({
-          message: "Переданы некорректные данные для подстановки/снятия лайка.",
-        });
+      case "CastError":
+        code = 400;
+        msg = "Введены некорректные данные";
         break;
-      default:
-        res.status(500).send("Произошла ошибка");
+      case "NotFoundError":
+        code = 404;
+        msg = "Данные не найдены";
+        break;
     }
+    res.status(code).send(msg);
   }
 };
+
