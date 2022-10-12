@@ -1,59 +1,53 @@
-const { NotFoundError } = require("../errors/errors");
 const Card = require("../models/card");
+const AuthecationError = require("../errors/authecation-error");
+const BadRequest = require("../errors/bad-request");
+const NotFoundError = require("../errors/not-found-err");
 
-module.exports.getCards = async (req, res) => {
+module.exports.getCards = async (req, res, next) => {
   try {
     const cards = await Card.find({});
     res.send({ data: cards });
   } catch (err) {
-    res.status(500).send({ message: "Произошла ошибка" });
+    next(err);
   }
 };
 
-module.exports.createCard = async (req, res) => {
+module.exports.createCard = async (req, res, next) => {
   const { name, link } = req.body;
   const owner = req.user._id;
   try {
+    console.log(name, link, owner);
     const card = await Card.create({ name, link, owner });
     res.send({ data: card });
   } catch (err) {
-    let code = 500;
-    let msg = "Произошла ошибка";
+    console.log(err)
     switch (err.name) {
       case "ValidationError":
-        code = 400;
-        msg = "Введены некорректные данные";
-        break;
+        next(new BadRequest());
     }
-    res.status(code).send(msg);
   }
 };
 
-module.exports.deleteCard = async (req, res) => {
+module.exports.deleteCard = async (req, res, next) => {
+  const userId = req.user._id;
   const reqCard = req.params.cardId;
   try {
-    const card = await Card.findByIdAndRemove(reqCard).orFail(
-      new NotFoundError()
+    const card = await Card.findById(reqCard).orFail(
+     new NotFoundError()
     );
-    res.send({ data: card });
-  } catch (err) {
-    let code = 500;
-    let msg = "Произошла ошибка";
-    switch (err.name) {
-      case "CastError":
-        code = 400;
-        msg = "Введены некорректные данные";
-        break;
-      case "NotFoundError":
-        code = 404;
-        msg = "Данные не найдены";
-        break;
+    const cardOwnerId = card.owner.toString();
+    if(cardOwnerId === userId) {
+      const deletedCard = await Card.findByIdAndDelete(reqCard);
+      res.send({ data:deletedCard });
+    } else {
+      throw new AuthecationError();
     }
-    res.status(code).send(msg);
+  } catch (err) {
+    next(err);
   }
 };
 
-module.exports.likeCard = async (req, res) => {
+module.exports.likeCard = async (req, res, next) => {
   try {
     const likes = await Card.findByIdAndUpdate(
       req.params.cardId,
@@ -62,23 +56,11 @@ module.exports.likeCard = async (req, res) => {
     ).orFail(new NotFoundError());
     res.send({ data: likes });
   } catch (err) {
-    let code = 500;
-    let msg = "Произошла ошибка";
-    switch (err.name) {
-      case "CastError":
-        code = 400;
-        msg = "Введены некорректные данные";
-        break;
-      case "NotFoundError":
-        code = 404;
-        msg = "Данные не найдены";
-        break;
-    }
-    res.status(code).send(msg);
+    next(err);
   }
 };
 
-module.exports.dislikeCard = async (req, res) => {
+module.exports.dislikeCard = async (req, res, next) => {
   try {
     const likes = await Card.findByIdAndUpdate(
       req.params.cardId,
@@ -87,19 +69,7 @@ module.exports.dislikeCard = async (req, res) => {
     ).orFail(new NotFoundError());
     res.send({ data: likes });
   } catch (err) {
-    let code = 500;
-    let msg = "Произошла ошибка";
-    switch (err.name) {
-      case "CastError":
-        code = 400;
-        msg = "Введены некорректные данные";
-        break;
-      case "NotFoundError":
-        code = 404;
-        msg = "Данные не найдены";
-        break;
-    }
-    res.status(code).send(msg);
+    next(err);
   }
 };
 

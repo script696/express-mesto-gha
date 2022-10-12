@@ -1,113 +1,111 @@
-const { NotFoundError } = require("../errors/errors");
 const User = require("../models/user");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const BadRequest = require("../errors/bad-request");
+const AuthecationError = require("../errors/authecation-error");
+const NotFoundError = require("../errors/not-found-err");
 
-module.exports.getUsers = async (req, res) => {
+module.exports.getUsers = async (req, res, next) => {
   try {
     const users = await User.find({});
-    res.send({ data: users });
-  } catch {
-    res.status(500).send({ message: "Произошла ошибка" });
+    res.send({data: users});
+  } catch (err) {
+    next(err);
   }
 };
 
-module.exports.getUser = async (req, res) => {
+module.exports.getUser = async (req, res, next) => {
   const reqUser = req.params.id;
 
   try {
     const user = await User.findById(reqUser).orFail(new NotFoundError());
-    res.send({ data: user });
+    res.send({data: user});
   } catch (err) {
-    let code = 500;
-    let msg = "Произошла ошибка";
-    switch (err.name) {
-      case "CastError":
-        code = 400;
-        msg = "Введены некорректные данные";
-        break;
-      case "NotFoundError":
-        code = 404;
-        msg = "Данные не найдены";
-        break;
-    }
-    res.status(code).send(msg);
+    next(err);
   }
 };
 
-module.exports.createUser = async (req, res) => {
-  const { name, about, avatar } = req.body;
+
+module.exports.createUser = async (req, res, next) => {
+  console.log('dsgfds')
+  let {name, about, avatar, email, password} = req.body;
   try {
-    const user = await User.create({ name, about, avatar });
-    res.send({ data: user });
+    const hash = await bcrypt.hash(password, 10);
+    const user = await User.create({name, about, avatar, email, password : hash});
+    console.log(name, about, avatar, email, hash);
+    res.send({data: user});
   } catch (err) {
-    let code = 500;
-    let msg = "Произошла ошибка";
+    console.log(err.name)
     switch (err.name) {
       case "ValidationError":
-        code = 400;
-        msg = "Введены некорректные данные";
-        break;
+        next(new BadRequest("Введены некорректные данные"));
     }
-    res.status(code).send(msg);
+    next(err);
   }
 };
 
-module.exports.updateMe = async (req, res) => {
-  const { name, about } = req.body;
+module.exports.updateMe = async (req, res, next) => {
+  const {name, about} = req.body;
   try {
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { name, about },
+      {name, about},
       {
         new: true,
         runValidators: true,
       }
     ).orFail(new NotFoundError());
-    res.send({ data: user });
+    res.send({data: user});
   } catch (err) {
-    let code = 500;
-    let msg = "Произошла ошибка";
-    switch (err.name) {
-      case "CastError":
-        code = 400;
-        msg = "Введены некорректные данные";
-        break;
-      case "NotFoundError":
-        code = 404;
-        msg = "Данные не найдены";
-        break;
-    }
-    res.status(code).send(msg);
+    next(err);
   }
 };
 
-module.exports.updateAvatar = async (req, res) => {
-  const { avatar } = req.body;
-
+module.exports.getMe = async (req, res, next) => {
   try {
+    const user = await User.findById(
+      req.user._id
+    ).orFail(new NotFoundError());
+    res.send({data: user});
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+module.exports.updateAvatar = async (req, res, next) => {
+  const {avatar} = req.body;
+  try {
+    if(!avatar) throw new BadRequest();
     const updatedAvatar = await User.findByIdAndUpdate(
       req.user._id,
-      { avatar },
+      {avatar},
       {
         new: true,
         runValidators: true,
         upsert: false,
       }
     ).orFail(new NotFoundError());
-    res.send({ data: updatedAvatar });
+    res.send({data: updatedAvatar});
   } catch (err) {
-    let code = 500;
-    let msg = "Произошла ошибка";
-    switch (err.name) {
-      case "CastError":
-        code = 400;
-        msg = "Введены некорректные данные";
-        break;
-      case "NotFoundError":
-        code = 404;
-        msg = "Данные не найдены";
-        break;
-    }
-    res.status(code).send(msg);
+    next(err);
   }
 };
 
+
+module.exports.login = async (req, res, next) => {
+  const {email, password} = req.body;
+  try {
+    const user = await User.findOne({email}).select("+password");
+    if (!user) throw new AuthecationError("Неправильные почта или пароль");
+    const matched = await bcrypt.compare(password, user.password);
+    if (!matched) throw new AuthecationError("Неправильные почта или пароль");
+    const token = jwt.sign({_id: user._id}, "some-secret-key", {expiresIn: "7d"});
+    res.send({data: token});
+
+  } catch (err) {
+    console.log(err.name);
+    next(err);
+  }
+}
+;
