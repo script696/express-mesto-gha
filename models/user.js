@@ -1,27 +1,27 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
-const {validateLink} = require("../midlewares/validation");
+const { validateLink } = require("../midlewares/validation");
 
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
     minlength: 2,
     maxlength: 30,
-    default: "Жак-Ив Кусто"
+    default: "Жак-Ив Кусто",
   },
-  about : {
+  about: {
     type: String,
     minlength: 2,
     maxlength: 30,
-    default: "Исследователь"
+    default: "Исследователь",
   },
-  avatar : {
+  avatar: {
     type: String,
     default: "https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png",
     validate: {
       validator: validateLink,
-      message: "Невалидная ссылка"
-    }
+      message: "Невалидная ссылка",
+    },
   },
   email: {
     type: String,
@@ -36,10 +36,8 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     minlength: 4,
-    select: false
-  }
+    select: false,
+  },
 });
-
-
 
 module.exports = mongoose.model("user", userSchema);

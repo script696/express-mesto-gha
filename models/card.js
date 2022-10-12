@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const {validateLink} = require("../midlewares/validation");
+const { validateLink } = require("../midlewares/validation");
 
 const cardSchema = new mongoose.Schema({
   name: {
@@ -13,8 +13,8 @@ const cardSchema = new mongoose.Schema({
     required: true,
     validate: {
       validator: validateLink,
-      message: "Невалидная ссылка"
-    }
+      message: "Невалидная ссылка",
+    },
   },
   owner: {
     type: mongoose.Schema.Types.ObjectId,
@@ -26,10 +26,10 @@ const cardSchema = new mongoose.Schema({
     ref: "user",
     default: [],
   },
-  createdAt : {
+  createdAt: {
     type: Date,
     default: Date.now,
-  }
+  },
 });
 
 module.exports = mongoose.model("card", cardSchema);

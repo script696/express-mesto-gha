@@ -1,6 +1,6 @@
-const {getUserByIdValidation, updateUserValidation, updateAvatarUserValidation} = require("../midlewares/validation");
-
 const router = require("express").Router();
+const { getUserByIdValidation, updateUserValidation, updateAvatarUserValidation } = require("../midlewares/validation");
+
 const {
   getUser,
   getUsers,

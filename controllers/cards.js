@@ -16,14 +16,15 @@ module.exports.createCard = async (req, res, next) => {
   const { name, link } = req.body;
   const owner = req.user._id;
   try {
-    console.log(name, link, owner);
     const card = await Card.create({ name, link, owner });
     res.send({ data: card });
   } catch (err) {
-    console.log(err)
     switch (err.name) {
       case "ValidationError":
         next(new BadRequest());
+        break;
+      default:
+        next(err);
     }
   }
 };
@@ -33,12 +34,12 @@ module.exports.deleteCard = async (req, res, next) => {
   const reqCard = req.params.cardId;
   try {
     const card = await Card.findById(reqCard).orFail(
-     new NotFoundError()
+      new NotFoundError(),
     );
     const cardOwnerId = card.owner.toString();
-    if(cardOwnerId === userId) {
+    if (cardOwnerId === userId) {
       const deletedCard = await Card.findByIdAndDelete(reqCard);
-      res.send({ data:deletedCard });
+      res.send({ data: deletedCard });
     } else {
       throw new AuthecationError();
     }
@@ -52,7 +53,7 @@ module.exports.likeCard = async (req, res, next) => {
     const likes = await Card.findByIdAndUpdate(
       req.params.cardId,
       { $addToSet: { likes: req.user._id } },
-      { new: true }
+      { new: true },
     ).orFail(new NotFoundError());
     res.send({ data: likes });
   } catch (err) {
@@ -65,11 +66,10 @@ module.exports.dislikeCard = async (req, res, next) => {
     const likes = await Card.findByIdAndUpdate(
       req.params.cardId,
       { $pull: { likes: req.user._id } },
-      { new: true }
+      { new: true },
     ).orFail(new NotFoundError());
     res.send({ data: likes });
   } catch (err) {
     next(err);
   }
 };
-
