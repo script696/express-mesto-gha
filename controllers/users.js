@@ -4,6 +4,7 @@ const User = require("../models/user");
 const BadRequest = require("../errors/bad-request");
 const AuthecationError = require("../errors/authecation-error");
 const NotFoundError = require("../errors/not-found-err");
+const ConflictError = require("../errors/conflict-error");
 
 module.exports.getUsers = async (req, res, next) => {
   try {
@@ -18,7 +19,7 @@ module.exports.getUser = async (req, res, next) => {
   const reqUser = req.params.id;
 
   try {
-    const user = await User.findById(reqUser).orFail(new NotFoundError());
+    const user = await User.findById(reqUser).orFail(new NotFoundError("Пользователь не найден"));
     res.send({ data: user });
   } catch (err) {
     next(err);
@@ -30,11 +31,17 @@ module.exports.createUser = async (req, res, next) => {
     name, about, avatar, email, password,
   } = req.body;
   try {
+    const user = await User.find({ email });
+    if (user.length) throw new ConflictError();
     const hash = await bcrypt.hash(password, 10);
-    const user = await User.create({
+    await User.create({
       name, about, avatar, email, password: hash,
     });
-    res.send({ data: user });
+    res.send({
+      data: {
+        name, about, avatar, email,
+      },
+    });
   } catch (err) {
     switch (err.name) {
       case "ValidationError":
@@ -56,10 +63,16 @@ module.exports.updateMe = async (req, res, next) => {
         new: true,
         runValidators: true,
       },
-    ).orFail(new NotFoundError());
+    ).orFail(new NotFoundError("Пользователь не найден"));
     res.send({ data: user });
   } catch (err) {
-    next(err);
+    switch (err.name) {
+      case "ValidationError":
+        next(new BadRequest("Введены некорректные данные"));
+        break;
+      default:
+        next(err);
+    }
   }
 };
 
@@ -67,7 +80,7 @@ module.exports.getMe = async (req, res, next) => {
   try {
     const user = await User.findById(
       req.user._id,
-    ).orFail(new NotFoundError());
+    ).orFail(new NotFoundError("Пользователь не найден"));
     res.send({ data: user });
   } catch (err) {
     next(err);
@@ -77,7 +90,6 @@ module.exports.getMe = async (req, res, next) => {
 module.exports.updateAvatar = async (req, res, next) => {
   const { avatar } = req.body;
   try {
-    if (!avatar) throw new BadRequest();
     const updatedAvatar = await User.findByIdAndUpdate(
       req.user._id,
       { avatar },
@@ -86,10 +98,16 @@ module.exports.updateAvatar = async (req, res, next) => {
         runValidators: true,
         upsert: false,
       },
-    ).orFail(new NotFoundError());
+    ).orFail(new NotFoundError("Пользователь не найден"));
     res.send({ data: updatedAvatar });
   } catch (err) {
-    next(err);
+    switch (err.name) {
+      case "ValidationError":
+        next(new BadRequest("Введены некорректные данные"));
+        break;
+      default:
+        next(err);
+    }
   }
 };
 

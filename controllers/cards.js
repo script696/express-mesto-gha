@@ -1,7 +1,7 @@
 const Card = require("../models/card");
-const AuthecationError = require("../errors/authecation-error");
 const BadRequest = require("../errors/bad-request");
 const NotFoundError = require("../errors/not-found-err");
+const ForbiddenError = require("../errors/forbidden-error");
 
 module.exports.getCards = async (req, res, next) => {
   try {
@@ -34,14 +34,14 @@ module.exports.deleteCard = async (req, res, next) => {
   const reqCard = req.params.cardId;
   try {
     const card = await Card.findById(reqCard).orFail(
-      new NotFoundError(),
+      new NotFoundError("Карточка не найдена"),
     );
     const cardOwnerId = card.owner.toString();
     if (cardOwnerId === userId) {
       const deletedCard = await Card.findByIdAndDelete(reqCard);
       res.send({ data: deletedCard });
     } else {
-      throw new AuthecationError();
+      throw new ForbiddenError();
     }
   } catch (err) {
     next(err);
@@ -54,7 +54,7 @@ module.exports.likeCard = async (req, res, next) => {
       req.params.cardId,
       { $addToSet: { likes: req.user._id } },
       { new: true },
-    ).orFail(new NotFoundError());
+    ).orFail(new NotFoundError("Карточка не найдена"));
     res.send({ data: likes });
   } catch (err) {
     next(err);
@@ -67,7 +67,7 @@ module.exports.dislikeCard = async (req, res, next) => {
       req.params.cardId,
       { $pull: { likes: req.user._id } },
       { new: true },
-    ).orFail(new NotFoundError());
+    ).orFail(new NotFoundError("Карточка не найдена"));
     res.send({ data: likes });
   } catch (err) {
     next(err);

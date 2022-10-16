@@ -1,7 +1,6 @@
 class AuthecationError extends Error {
-  constructor() {
-    super();
-    this.message = "Недостаточно прав";
+  constructor(message) {
+    super(message);
     this.statusCode = 401;
   }
 }
