@@ -1,7 +1,6 @@
 class ConflictError extends Error {
-  constructor() {
-    super();
-    this.message = "Данные уже существуют";
+  constructor(message) {
+    super(message);
     this.statusCode = 409;
   }
 }

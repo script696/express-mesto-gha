@@ -31,8 +31,6 @@ module.exports.createUser = async (req, res, next) => {
     name, about, avatar, email, password,
   } = req.body;
   try {
-    const user = await User.find({ email });
-    if (user.length) throw new ConflictError();
     const hash = await bcrypt.hash(password, 10);
     await User.create({
       name, about, avatar, email, password: hash,
@@ -43,6 +41,7 @@ module.exports.createUser = async (req, res, next) => {
       },
     });
   } catch (err) {
+    if (err.code === 11000) next(new ConflictError("Польватель с такими данными уже существует"));
     switch (err.name) {
       case "ValidationError":
         next(new BadRequest("Введены некорректные данные"));
